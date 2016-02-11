@@ -35,7 +35,7 @@ func main() {
 
     // Create an HTTP client
     client := http.Client{}
-    request, err := http.NewRequest("GET", site, nil)
+    request, err := http.NewRequest("HEAD", site, nil)
     if err != nil {
         fmt.Println("Error creating HTTP request: ", err)
         return
@@ -48,13 +48,6 @@ func main() {
         return
     }
     defer response.Body.Close()
-
-    responseBytes, err := ioutil.ReadAll(response.Body)
-    if err != nil {
-        fmt.Println("Error getting response body: ", err)
-        return
-    }
-    fmt.Println(string(responseBytes))
 
     // Hash the url
     hashed := md5.New()
