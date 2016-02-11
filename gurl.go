@@ -2,18 +2,27 @@ package main
 
 import (
     "crypto/md5"
+    "encoding/base64"
     "flag"
     "fmt"
     "io/ioutil"
     "net/http"
 )
 
-// gurl: a URL shortener written in Go
-// Usage: ./gurl -site <websiteURL>
+/* gurl: a URL shortener written in Go
+   Usage: ./gurl -site <websiteURL> */
 
+// Handle command line arguments
 var site string
 func init() {
     flag.StringVar(&site, "site", "http://www.hollytancredi.net", "Website to connect to")
+}
+
+
+// Convert hashed bytes to base64
+func b64_encode(hashed []byte) string {
+    base64_encoded := base64.StdEncoding.EncodeToString(hashed)
+    return base64_encoded
 }
 
 func main() {
@@ -50,9 +59,14 @@ func main() {
     // Hash the url
     hashed := md5.New()
     hashed.Write([]byte(site))
-    hashed_string := hashed.Sum(nil)
+    hashed_bytes := hashed.Sum(nil)
+
+    // base64 encode hashed url
+    b64_url := b64_encode(hashed_bytes)
 
     // Testing
     fmt.Println("Original url: ", site)
-    fmt.Printf("Hashed url: %x\n", hashed_string)
+    fmt.Printf("Hashed url (hex): %x\n", hashed_bytes)
+    fmt.Println("Hashed url (bytes): ", hashed_bytes)
+    fmt.Println("Hashed url (base64) :", b64_url)
 }
