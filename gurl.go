@@ -5,7 +5,6 @@ import (
     "encoding/base64"
     "flag"
     "fmt"
-    "io/ioutil"
     "net/http"
 )
 
@@ -22,7 +21,7 @@ func init() {
 // Convert hashed bytes to base64
 func b64_encode(hashed []byte) string {
     base64_encoded := base64.StdEncoding.EncodeToString(hashed)
-    return base64_encoded
+    return base64_encoded[0:3]
 }
 
 func main() {
@@ -57,9 +56,11 @@ func main() {
     // base64 encode hashed url
     b64_url := b64_encode(hashed_bytes)
 
+    // Map original url to hashed one
+    url_map := make(map[string]string)
+    url_map[site] = "http://hollytancredi.net/" + b64_url 
+
     // Testing
     fmt.Println("Original url: ", site)
-    fmt.Printf("Hashed url (hex): %x\n", hashed_bytes)
-    fmt.Println("Hashed url (bytes): ", hashed_bytes)
-    fmt.Println("Hashed url (base64) :", b64_url)
+    fmt.Println("Shortened(?) url: ", url_map[site])
 }
