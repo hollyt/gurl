@@ -71,6 +71,6 @@ func b64_encode(hashed []byte) string {
 // HTTP request handling
 func redirect(w http.ResponseWriter, r *http.Request) {
     short_url := "h0lt.net" + r.URL.Path
-    msg := short_url + " mapped to http://" + url_map[short_url]
+    msg := short_url + " mapped to " + url_map[short_url]
     fmt.Fprintf(w, msg)
 }
