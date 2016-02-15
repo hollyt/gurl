@@ -11,19 +11,6 @@ import (
 /* gurl: a URL shortener written in Go
    Usage: ./gurl -site <websiteURL> */
 
-// Handle command line arguments
-var site string
-func init() {
-    flag.StringVar(&site, "site", "http://www.hollytancredi.net", "Website to connect to")
-}
-
-
-// Convert hashed bytes to base64
-func b64_encode(hashed []byte) string {
-    base64_encoded := base64.StdEncoding.EncodeToString(hashed)
-    return base64_encoded[0:3]
-}
-
 func main() {
 
     // Get website URL
@@ -54,13 +41,36 @@ func main() {
     hashed_bytes := hashed.Sum(nil)
 
     // base64 encode hashed url
-    b64_url := b64_encode(hashed_bytes)
-
-    // Map original url to hashed one
-    url_map := make(map[string]string)
-    url_map[site] = "http://h0lt.net/" + b64_url 
+    short_url := "h0lt.net/" + b64_encode(hashed_bytes)
+    url_map[short_url] = site
 
     // Testing
     fmt.Println("Original url: ", site)
-    fmt.Println("Shortened(?) url: ", url_map[site])
+    fmt.Println("Shortened(?) url: ", short_url)
+
+    // Create HTTP server
+    http.HandleFunc("/", redirect)
+    http.ListenAndServe(":8080", nil)
+}
+
+
+var url_map = make(map[string]string)
+
+// Handle command line arguments
+var site string
+func init() {
+    flag.StringVar(&site, "site", "http://www.hollytancredi.net", "Website to connect to")
+}
+
+// Convert hashed bytes to base64
+func b64_encode(hashed []byte) string {
+    base64_encoded := base64.StdEncoding.EncodeToString(hashed)
+    return base64_encoded[0:3]
+}
+
+// HTTP request handling
+func redirect(w http.ResponseWriter, r *http.Request) {
+    short_url := "h0lt.net" + r.URL.Path
+    msg := short_url + " mapped to http://" + url_map[short_url]
+    fmt.Fprintf(w, msg)
 }
