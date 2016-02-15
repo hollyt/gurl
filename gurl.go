@@ -58,7 +58,7 @@ func main() {
 
     // Map original url to hashed one
     url_map := make(map[string]string)
-    url_map[site] = "http://hollytancredi.net/" + b64_url 
+    url_map[site] = "http://h0lt.net/" + b64_url 
 
     // Testing
     fmt.Println("Original url: ", site)
