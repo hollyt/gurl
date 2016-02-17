@@ -53,7 +53,9 @@ func main() {
         defer db.Close()
 
         create := `
-        create table test (id integer not null primary key, shortened text, original text);
+        create table if not exists urls
+        (id integer not null primary key,
+        shortened text, original text);
         `
         _, err = db.Exec(create)
         if err != nil {
