@@ -21,21 +21,10 @@ func main() {
 		site = "http://" + site
 	}
 
-	// Create an HTTP client
-	client := http.Client{}
-	request, err := http.NewRequest("HEAD", site, nil)
-	if err != nil {
-		fmt.Println("Error creating HTTP request: ", err)
-		return
-	}
-
-	// Send the request and get back the HTTP response
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println("Error sending HTTP request: ", err)
-		return
-	}
-	defer response.Body.Close()
+        if check_url(site) == false {
+            fmt.Println("Error: not a valid url.")
+            return
+        }
 
 	// Hash the url
 	hashed := md5.New()
@@ -57,6 +46,26 @@ func main() {
 
 // Handle command line arguments
 var site string
+
+// Check url to see if it's valid
+func check_url(site string) bool{
+        // Create an HTTP client
+	client := http.Client{}
+	request, err := http.NewRequest("HEAD", site, nil)
+	if err != nil {
+		fmt.Println("Error creating HTTP request: ", err)
+                return false
+	}
+
+	// Send the request and get back the HTTP response
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Error sending HTTP request: ", err)
+                return false
+	}
+	defer response.Body.Close()
+        return true
+}
 
 func init() {
 	flag.StringVar(&site, "site", "http://www.hollytancredi.net", "Website to connect to")
