@@ -44,37 +44,7 @@ func main() {
 
 	// base64 encode hashed url
 	short_url := "h0lt.net/" + b64_encode(hashed_bytes)
-
-        // Add short url => original url to database
-        db, err := sql.Open("sqlite3", "./urls.db")
-        if err != nil {
-            fmt.Println("Error connecting to database: ", err)
-        }
-        defer db.Close()
-
-        create := `
-        create table if not exists urls
-        (id integer not null primary key,
-        short text, original text);
-        `
-        _, err = db.Exec(create)
-        if err != nil {
-            fmt.Printf("%q: %s\n", err, create)
-            return
-        }
-
-        // Add url map to database
-        // tx = transaction
-        tx, err := db.Begin()
-        if err != nil {
-            fmt.Println("Error: ", err)
-        }
-        insert, err := tx.Prepare("insert into urls(short, original) values(short_url, site)")
-        if err != nil {
-            fmt.Println("Error inserting into database: ", err)
-        }
-        defer insert.Close()
-        tx.Commit()
+        add_to_database(short_url, site)
 
 	// Testing
 	fmt.Println("Original url: ", site)
@@ -103,4 +73,44 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 	//short_url := "h0lt.net" + r.URL.Path
 	//msg := short_url + " mapped to " + url_map[short_url]
 	fmt.Fprintf(w, "Test!")
+}
+
+// Map short url => original url in database
+func add_to_database(short_url string, site string) {
+        db, err := sql.Open("sqlite3", "./urls.db")
+        if err != nil {
+            fmt.Println("Error connecting to database: ", err)
+        }
+        defer db.Close()
+
+        create := `
+        create table if not exists urls
+        (id integer not null primary key,
+        short text, original text);
+        `
+        _, err = db.Exec(create)
+        if err != nil {
+            fmt.Printf("%q: %s\n", err, create)
+            return
+        }
+
+        // Add url map to database
+        // tx => transaction
+        tx, err := db.Begin()
+        if err != nil {
+            fmt.Println("Error: ", err)
+        }
+
+        insert, err := tx.Prepare("insert into urls(short, original) values(?,?)")
+        if err != nil {
+            fmt.Println("Error inserting into database: ", err)
+        }
+        defer insert.Close()
+
+
+        _, err = insert.Exec(short_url, site)
+        if err != nil {
+            fmt.Println("Error inserting into database: ", err)
+        }
+        tx.Commit()
 }
