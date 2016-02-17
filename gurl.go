@@ -55,13 +55,26 @@ func main() {
         create := `
         create table if not exists urls
         (id integer not null primary key,
-        shortened text, original text);
+        short text, original text);
         `
         _, err = db.Exec(create)
         if err != nil {
             fmt.Printf("%q: %s\n", err, create)
             return
         }
+
+        // Add url map to database
+        // tx = transaction
+        tx, err := db.Begin()
+        if err != nil {
+            fmt.Println("Error: ", err)
+        }
+        insert, err := tx.Prepare("insert into urls(short, original) values(short_url, site)")
+        if err != nil {
+            fmt.Println("Error inserting into database: ", err)
+        }
+        defer insert.Close()
+        tx.Commit()
 
 	// Testing
 	fmt.Println("Original url: ", site)
