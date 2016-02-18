@@ -2,11 +2,11 @@ package main
 
 import (
 	"crypto/md5"
-        "database/sql"
+	"database/sql"
 	"encoding/base64"
 	"flag"
 	"fmt"
-        _ "github.com/mattn/go-sqlite3"
+	_ "github.com/mattn/go-sqlite3"
 	"net/http"
 )
 
@@ -21,10 +21,10 @@ func main() {
 		site = "http://" + site
 	}
 
-        if check_url(site) == false {
-            fmt.Println("Error: not a valid url.")
-            return
-        }
+	if check_url(site) == false {
+		fmt.Println("Error: not a valid url.")
+		return
+	}
 
 	// Hash the url
 	hashed := md5.New()
@@ -32,8 +32,8 @@ func main() {
 	hashed_bytes := hashed.Sum(nil)
 
 	// base64 encode hashed url
-	short_url := "h0lt.net/" + b64_encode(hashed_bytes)
-        add_to_database(short_url, site)
+	short_url := "localhost:8080" + b64_encode(hashed_bytes)
+	add_to_database(short_url, site)
 
 	// Testing
 	fmt.Println("Original url: ", site)
@@ -48,23 +48,23 @@ func main() {
 var site string
 
 // Check url to see if it's valid
-func check_url(site string) bool{
-        // Create an HTTP client
+func check_url(site string) bool {
+	// Create an HTTP client
 	client := http.Client{}
 	request, err := http.NewRequest("HEAD", site, nil)
 	if err != nil {
 		fmt.Println("Error creating HTTP request: ", err)
-                return false
+		return false
 	}
 
 	// Send the request and get back the HTTP response
 	response, err := client.Do(request)
 	if err != nil {
 		fmt.Println("Error sending HTTP request: ", err)
-                return false
+		return false
 	}
 	defer response.Body.Close()
-        return true
+	return true
 }
 
 func init() {
@@ -86,40 +86,39 @@ func redirect(w http.ResponseWriter, r *http.Request) {
 
 // Map short url => original url in database
 func add_to_database(short_url string, site string) {
-        db, err := sql.Open("sqlite3", "./urls.db")
-        if err != nil {
-            fmt.Println("Error connecting to database: ", err)
-        }
-        defer db.Close()
+	db, err := sql.Open("sqlite3", "./urls.db")
+	if err != nil {
+		fmt.Println("Error connecting to database: ", err)
+	}
+	defer db.Close()
 
-        create := `
+	create := `
         create table if not exists urls
         (id integer not null primary key,
         short text, original text);
         `
-        _, err = db.Exec(create)
-        if err != nil {
-            fmt.Printf("%q: %s\n", err, create)
-            return
-        }
+	_, err = db.Exec(create)
+	if err != nil {
+		fmt.Printf("%q: %s\n", err, create)
+		return
+	}
 
-        // Add url map to database
-        // tx => transaction
-        tx, err := db.Begin()
-        if err != nil {
-            fmt.Println("Error: ", err)
-        }
+	// Add url map to database
+	// tx => transaction
+	tx, err := db.Begin()
+	if err != nil {
+		fmt.Println("Error: ", err)
+	}
 
-        insert, err := tx.Prepare("insert into urls(short, original) values(?,?)")
-        if err != nil {
-            fmt.Println("Error inserting into database: ", err)
-        }
-        defer insert.Close()
+	insert, err := tx.Prepare("insert into urls(short, original) values(?,?)")
+	if err != nil {
+		fmt.Println("Error inserting into database: ", err)
+	}
+	defer insert.Close()
 
-
-        _, err = insert.Exec(short_url, site)
-        if err != nil {
-            fmt.Println("Error inserting into database: ", err)
-        }
-        tx.Commit()
+	_, err = insert.Exec(short_url, site)
+	if err != nil {
+		fmt.Println("Error inserting into database: ", err)
+	}
+	tx.Commit()
 }
