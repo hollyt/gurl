@@ -32,7 +32,7 @@ func main() {
 	hashed_bytes := hashed.Sum(nil)
 
 	// base64 encode hashed url
-	short_url := "localhost:8080" + b64_encode(hashed_bytes)
+	short_url := "localhost:8080/" + b64_encode(hashed_bytes)
 	add_to_database(short_url, site)
 
 	// Testing
@@ -79,8 +79,7 @@ func b64_encode(hashed []byte) string {
 
 // HTTP request handling
 func redirect(w http.ResponseWriter, r *http.Request) {
-	//short_url := "h0lt.net" + r.URL.Path
-	//msg := short_url + " mapped to " + url_map[short_url]
+	//http.Redirect(w, r, url, http.StatusFound)
 	fmt.Fprintf(w, "Test!")
 }
 
@@ -121,4 +120,25 @@ func add_to_database(short_url string, site string) {
 		fmt.Println("Error inserting into database: ", err)
 	}
 	tx.Commit()
+}
+
+func get_original_url(short_url string) string {
+	db, err := sql.Open("sqlite3", "./urls.db")
+	if err != nil {
+		fmt.Println("Error connecting to database: ", err)
+	}
+	defer db.Close()
+
+	query := "select original from urls where short = " + short_url
+
+	rows, err := db.Query(query)
+	if err != nil {
+		fmt.Println("Error querying database: ", err)
+	}
+	defer rows.Close()
+
+	//For now, there should not be collisions
+	var original_url string
+	rows.Scan(&original_url)
+	return original_url
 }
