@@ -32,7 +32,7 @@ func main() {
 	hashed_bytes := hashed.Sum(nil)
 
 	// base64 encode hashed url
-	short_url := "localhost:8080/" + b64_encode(hashed_bytes)
+	short_url = "localhost:8080/" + b64_encode(hashed_bytes)
 	add_to_database(short_url, site)
 
 	// Testing
@@ -46,6 +46,7 @@ func main() {
 
 // Handle command line arguments
 var site string
+var short_url string
 
 // Check url to see if it's valid
 func check_url(site string) bool {
@@ -79,8 +80,9 @@ func b64_encode(hashed []byte) string {
 
 // HTTP request handling
 func redirect(w http.ResponseWriter, r *http.Request) {
-	//http.Redirect(w, r, url, http.StatusFound)
-	fmt.Fprintf(w, "Test!")
+	url := get_original_url(short_url)
+	http.Redirect(w, r, url, http.StatusFound)
+	//fmt.Fprintf(w, "Test!")
 }
 
 // Map short url => original url in database
