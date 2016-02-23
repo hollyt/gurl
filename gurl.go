@@ -15,7 +15,6 @@ import (
 
 func main() {
 	flag.Parse()
-	fmt.Println("url: ", url)
 	if url != " " {
 		shorten()
 	}
@@ -25,72 +24,8 @@ func main() {
 	http.ListenAndServe(":8080", nil)
 }
 
-// Handle command line arguments
 var url string
 var short_url string
-
-// Check url to see if it's valid
-func check_url(url string) bool {
-	// Create an HTTP client
-	client := http.Client{}
-	request, err := http.NewRequest("HEAD", url, nil)
-	if err != nil {
-		fmt.Println("Error creating HTTP request: ", err)
-		return false
-	}
-
-	// Send the request and get back the HTTP response
-	response, err := client.Do(request)
-	if err != nil {
-		fmt.Println("Error sending HTTP request: ", err)
-		return false
-	}
-	defer response.Body.Close()
-	return true
-}
-
-// Shorten url if one is entered
-func shorten() {
-	// Get website URL
-	if url[0:7] != "http://" {
-		url = "http://" + url
-	}
-
-	if check_url(url) == false {
-		fmt.Println("Error: not a valid url.")
-		return
-	}
-
-	// Hash the url
-	hashed := md5.New()
-	hashed.Write([]byte(url))
-	hashed_bytes := hashed.Sum(nil)
-
-	// base64 encode hashed url
-	short_url = "localhost:8080/" + b64_encode(hashed_bytes)
-	add_to_database(short_url, url)
-
-	// Testing
-	fmt.Println("Original url: ", url)
-	fmt.Println("Shortened(?) url: ", short_url)
-}
-
-func init() {
-	flag.StringVar(&url, "url", " ", "URL to shorten")
-}
-
-// Convert hashed bytes to base64
-func b64_encode(hashed []byte) string {
-	base64_encoded := base64.StdEncoding.EncodeToString(hashed)
-	return base64_encoded[0:3]
-}
-
-// HTTP request handling
-func redirect(w http.ResponseWriter, r *http.Request) {
-	redirect_url := get_original_url("localhost:8080" + r.URL.Path)
-	http.Redirect(w, r, redirect_url, 302)
-	//fmt.Fprintf(w, redirect_url)
-}
 
 // Map short url => original url in database
 func add_to_database(short_url string, url string) {
@@ -130,6 +65,32 @@ func add_to_database(short_url string, url string) {
 	tx.Commit()
 }
 
+// Convert hashed bytes to base64
+func b64_encode(hashed []byte) string {
+	base64_encoded := base64.StdEncoding.EncodeToString(hashed)
+	return base64_encoded[0:3]
+}
+
+// Check url to see if it's valid
+func check_url(url string) bool {
+	// Create an HTTP client
+	client := http.Client{}
+	request, err := http.NewRequest("HEAD", url, nil)
+	if err != nil {
+		fmt.Println("Error creating HTTP request: ", err)
+		return false
+	}
+
+	// Send the request and get back the HTTP response
+	response, err := client.Do(request)
+	if err != nil {
+		fmt.Println("Error sending HTTP request: ", err)
+		return false
+	}
+	defer response.Body.Close()
+	return true
+}
+
 func get_original_url(short_url string) string {
 	db, err := sql.Open("sqlite3", "./urls.db")
 	if err != nil {
@@ -148,4 +109,39 @@ func get_original_url(short_url string) string {
 	}
 
 	return original_url
+}
+
+func init() {
+	flag.StringVar(&url, "url", " ", "URL to shorten")
+}
+
+// HTTP request handling
+func redirect(w http.ResponseWriter, r *http.Request) {
+	redirect_url := get_original_url("localhost:8080" + r.URL.Path)
+	http.Redirect(w, r, redirect_url, 302)
+	//fmt.Fprintf(w, redirect_url)
+}
+
+// Shorten url
+func shorten() {
+	// Get website URL
+	if url[0:7] != "http://" {
+		url = "http://" + url
+	}
+
+	if check_url(url) == false {
+		fmt.Println("Error: not a valid url.")
+		return
+	}
+
+	// Hash the url
+	hashed := md5.New()
+	hashed.Write([]byte(url))
+	hashed_bytes := hashed.Sum(nil)
+
+	// base64 encode hashed url
+	short_url = "localhost:8080/" + b64_encode(hashed_bytes)
+	add_to_database(short_url, url)
+
+	fmt.Println("*:･ﾟ✧YOUR NEW SHORT URL✨ : ", short_url)
 }
