@@ -1,15 +1,17 @@
 # :sparkles: gurl :sparkles:
 ### gurl is a url shortener written in go.
 
-Since I plan on using this for my personal use only, the
-shortened => original url map is stored in an sqlite database.
+Since I just wrote this for fun, storage is an `sqlite
+database` and the server is `localhost` listening to port `8080`.
 
-You probably shouldn't use this as a model for your own url
-shortening service (since this is just a fun experiment and
-I can't guarantee that things won't break/go horribly wrong.),
-but if you do, you'll want to change localhost:8080 to your own domain.
+### Usage
+You can use the optional -url flag to specify the url you want to shorten.
+`./gurl -url www.github.com`   
+Otherwise, the server just redirects based on previously shortened urls
+found in the database.
 
 ## Dependencies
+* sqlite3
 * mattn's [go-sqlite3](https://github.com/mattn/go-sqlite3) package
    
    
