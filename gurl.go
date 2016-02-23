@@ -117,7 +117,7 @@ func add_to_database(short_url string, url string) {
 		fmt.Println("Error: ", err)
 	}
 
-	insert, err := tx.Prepare("insert into urls(short, original) values(?,?)")
+	insert, err := tx.Prepare("insert or ignore into urls(short, original) values(?,?)")
 	if err != nil {
 		fmt.Println("Error inserting into database: ", err)
 	}
