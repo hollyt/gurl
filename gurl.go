@@ -11,33 +11,14 @@ import (
 )
 
 /* gurl: a URL shortener written in Go
-   Usage: ./gurl -site <websiteURL> */
+   Usage: ./gurl -url <websiteURL> */
 
 func main() {
-
-	// Get website URL
 	flag.Parse()
-	if site[0:7] != "http://" {
-		site = "http://" + site
+	fmt.Println("url: ", url)
+	if url != " " {
+		shorten()
 	}
-
-	if check_url(site) == false {
-		fmt.Println("Error: not a valid url.")
-		return
-	}
-
-	// Hash the url
-	hashed := md5.New()
-	hashed.Write([]byte(site))
-	hashed_bytes := hashed.Sum(nil)
-
-	// base64 encode hashed url
-	short_url = "localhost:8080/" + b64_encode(hashed_bytes)
-	add_to_database(short_url, site)
-
-	// Testing
-	fmt.Println("Original url: ", site)
-	fmt.Println("Shortened(?) url: ", short_url)
 
 	// Create HTTP server
 	http.HandleFunc("/", redirect)
@@ -45,14 +26,14 @@ func main() {
 }
 
 // Handle command line arguments
-var site string
+var url string
 var short_url string
 
 // Check url to see if it's valid
-func check_url(site string) bool {
+func check_url(url string) bool {
 	// Create an HTTP client
 	client := http.Client{}
-	request, err := http.NewRequest("HEAD", site, nil)
+	request, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
 		fmt.Println("Error creating HTTP request: ", err)
 		return false
@@ -68,8 +49,34 @@ func check_url(site string) bool {
 	return true
 }
 
+// Shorten url if one is entered
+func shorten() {
+	// Get website URL
+	if url[0:7] != "http://" {
+		url = "http://" + url
+	}
+
+	if check_url(url) == false {
+		fmt.Println("Error: not a valid url.")
+		return
+	}
+
+	// Hash the url
+	hashed := md5.New()
+	hashed.Write([]byte(url))
+	hashed_bytes := hashed.Sum(nil)
+
+	// base64 encode hashed url
+	short_url = "localhost:8080/" + b64_encode(hashed_bytes)
+	add_to_database(short_url, url)
+
+	// Testing
+	fmt.Println("Original url: ", url)
+	fmt.Println("Shortened(?) url: ", short_url)
+}
+
 func init() {
-	flag.StringVar(&site, "site", "http://www.hollytancredi.net", "Website to connect to")
+	flag.StringVar(&url, "url", " ", "URL to shorten")
 }
 
 // Convert hashed bytes to base64
@@ -80,13 +87,13 @@ func b64_encode(hashed []byte) string {
 
 // HTTP request handling
 func redirect(w http.ResponseWriter, r *http.Request) {
-	url := get_original_url(short_url)
-	http.Redirect(w, r, url, http.StatusFound)
-	//fmt.Fprintf(w, "Test!")
+	redirect_url := get_original_url("localhost:8080" + r.URL.Path)
+	http.Redirect(w, r, redirect_url, 302)
+	//fmt.Fprintf(w, redirect_url)
 }
 
 // Map short url => original url in database
-func add_to_database(short_url string, site string) {
+func add_to_database(short_url string, url string) {
 	db, err := sql.Open("sqlite3", "./urls.db")
 	if err != nil {
 		fmt.Println("Error connecting to database: ", err)
@@ -95,8 +102,7 @@ func add_to_database(short_url string, site string) {
 
 	create := `
         create table if not exists urls
-        (id integer not null primary key,
-        short text, original text);
+        (short text primary key, original text);
         `
 	_, err = db.Exec(create)
 	if err != nil {
@@ -105,7 +111,7 @@ func add_to_database(short_url string, site string) {
 	}
 
 	// Add url map to database
-	// tx => transaction
+	// tx is transaction
 	tx, err := db.Begin()
 	if err != nil {
 		fmt.Println("Error: ", err)
@@ -117,7 +123,7 @@ func add_to_database(short_url string, site string) {
 	}
 	defer insert.Close()
 
-	_, err = insert.Exec(short_url, site)
+	_, err = insert.Exec(short_url, url)
 	if err != nil {
 		fmt.Println("Error inserting into database: ", err)
 	}
@@ -131,16 +137,15 @@ func get_original_url(short_url string) string {
 	}
 	defer db.Close()
 
-	query := "select original from urls where short = " + short_url
-
-	rows, err := db.Query(query)
+	var original_url string
+	query, err := db.Prepare("select original from urls where short = ?")
+	if err != nil {
+		fmt.Println("Error preparing query: ", err)
+	}
+	err = query.QueryRow(short_url).Scan(&original_url)
 	if err != nil {
 		fmt.Println("Error querying database: ", err)
 	}
-	defer rows.Close()
 
-	//For now, there should not be collisions
-	var original_url string
-	rows.Scan(&original_url)
 	return original_url
 }
